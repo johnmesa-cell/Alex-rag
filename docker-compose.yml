@@ -17,6 +17,34 @@ services:
       - N8N_PROXY_HOPS=1
     volumes:
       - n8n_data:/home/node/.n8n
+    networks:
+      - web-net
+      - ia-net
+
+  ollama:
+    image: ollama/ollama:latest
+    container_name: alex-ollama
+    restart: unless-stopped
+    profiles:
+      - ia
+    environment:
+      - OLLAMA_NUM_PARALLEL=1
+      - OLLAMA_MAX_LOADED_MODELS=1
+      - OLLAMA_KEEP_ALIVE=5m
+    volumes:
+      - ollama_data:/root/.ollama
+    mem_limit: 7g
+    cpus: 1.5
+    networks:
+      - ia-net
 
 volumes:
   n8n_data:
+  ollama_data:
+
+networks:
+  web-net:
+    driver: bridge
+  ia-net:
+    driver: bridge
+    internal: true
