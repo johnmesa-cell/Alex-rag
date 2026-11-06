@@ -38,10 +38,21 @@ services:
     networks:
       - ia-net
 
+  qdrant:
+    image: qdrant/qdrant:latest
+    container_name: alex-qdrant
+    restart: unless-stopped
+    profiles:
+      - ia
+    volumes:
+      - qdrant_data:/qdrant/storage
+    networks:
+      - ia-net
+
 volumes:
   n8n_data:
   ollama_data:
-
+  qdrant_data:
 networks:
   web-net:
     driver: bridge
