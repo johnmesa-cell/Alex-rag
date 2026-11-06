@@ -53,6 +53,7 @@ volumes:
   n8n_data:
   ollama_data:
   qdrant_data:
+  
 networks:
   web-net:
     driver: bridge
