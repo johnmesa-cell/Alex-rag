@@ -1,4 +1,5 @@
 .env
+bot-discord/node_modules/
 *.pdf
 fragmentos.json
 .ipynb_checkpoints/
