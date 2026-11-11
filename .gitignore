@@ -3,3 +3,5 @@ bot-discord/node_modules/
 *.pdf
 fragmentos.json
 .ipynb_checkpoints/
+# Copias de seguridad de variables de entorno
+.env.backup-*
