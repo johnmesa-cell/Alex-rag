@@ -1,3 +1,4 @@
+
 services:
   n8n:
     image: docker.n8n.io/n8nio/n8n:latest
@@ -15,8 +16,10 @@ services:
       - GENERIC_TIMEZONE=${GENERIC_TIMEZONE}
       - TZ=${TZ}
       - N8N_PROXY_HOPS=1
+      - NODE_EXTRA_CA_CERTS=/opt/custom-certificates/prod-ca-2021.crt
     volumes:
       - n8n_data:/home/node/.n8n
+      - ./certificates/prod-ca-2021.crt:/opt/custom-certificates/prod-ca-2021.crt:ro
     networks:
       - web-net
       - ia-net
@@ -67,7 +70,7 @@ volumes:
   n8n_data:
   ollama_data:
   qdrant_data:
-  
+
 networks:
   web-net:
     driver: bridge
