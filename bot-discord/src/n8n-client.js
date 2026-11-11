@@ -1,6 +1,28 @@
 const { Agent } = require("undici");
+const { sessionIdFor } = require("./message-utils");
 
-async function askN8n(config, message, fetchImpl = fetch) {
+async function askN8n(
+  config,
+  message,
+  route = "simple",
+  fetchImpl = fetch
+) {
+  let webhookUrl;
+
+  if (route === "sql") {
+    webhookUrl = config.n8nSqlWebhookUrl;
+  } else if (route === "simple") {
+    webhookUrl = config.n8nWebhookUrl;
+  } else {
+    throw new Error(`Unknown n8n workflow route: ${route}`);
+  }
+
+  if (!webhookUrl) {
+    throw new Error(`Missing webhook URL for route: ${route}`);
+  }
+
+  const sessionId = sessionIdFor(message, route);
+
   const controller = new AbortController();
 
   const timeout = setTimeout(
@@ -14,7 +36,7 @@ async function askN8n(config, message, fetchImpl = fetch) {
   });
 
   try {
-    const response = await fetchImpl(config.n8nWebhookUrl, {
+    const response = await fetchImpl(webhookUrl, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -25,7 +47,7 @@ async function askN8n(config, message, fetchImpl = fetch) {
         messageId: message.id,
         guildId: message.guildId,
         channelId: message.channelId,
-        sessionId: `discord:${message.guildId}:${message.author.id}`,
+        sessionId,
       }),
       signal: controller.signal,
       dispatcher,
@@ -38,6 +60,7 @@ async function askN8n(config, message, fetchImpl = fetch) {
     const rawBody = await response.text();
 
     let body;
+
     try {
       body = JSON.parse(rawBody);
     } catch {
@@ -53,14 +76,12 @@ async function askN8n(config, message, fetchImpl = fetch) {
     }
 
     return answer;
-
   } catch (error) {
     if (error.name === "AbortError") {
       throw new Error("The request to n8n timed out");
     }
 
     throw error;
-
   } finally {
     clearTimeout(timeout);
     await dispatcher.close();

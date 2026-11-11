@@ -1,3 +1,4 @@
+
 const { Client, GatewayIntentBits } = require("discord.js");
 const { askN8n } = require("./n8n-client");
 const { splitMessage } = require("./message-utils");
@@ -12,12 +13,14 @@ function createBot(config, dependencies = {}) {
       GatewayIntentBits.MessageContent,
     ],
   });
+
   const fetchN8n = dependencies.askN8n || askN8n;
   const seenMessages = new Map();
   const userQueues = new Map();
 
   const cleanupSeen = () => {
     const now = Date.now();
+
     for (const [messageId, expiresAt] of seenMessages) {
       if (expiresAt <= now) seenMessages.delete(messageId);
     }
@@ -31,30 +34,48 @@ function createBot(config, dependencies = {}) {
     ) {
       return;
     }
+
     cleanupSeen();
+
     if (seenMessages.has(message.id)) return;
+
     seenMessages.set(message.id, Date.now() + DUPLICATE_TTL_MS);
+
+    const route = config.sqlChannelIds.has(message.channelId)
+      ? "sql"
+      : "simple";
 
     const userId = message.author.id;
     const previous = userQueues.get(userId) || Promise.resolve();
+
     const current = previous
       .catch(() => undefined)
       .then(async () => {
         try {
-          const answer = await fetchN8n(config, message);
+          const answer = await fetchN8n(config, message, route);
+
           for (const chunk of splitMessage(answer)) {
             await message.channel.send(chunk);
           }
         } catch (error) {
-          console.error(`Failed to process Discord message ${message.id}:`, error);
+          console.error(
+            `Failed to process Discord message ${message.id}:`,
+            error
+          );
+
           await message.channel.send(
-            "No pude procesar tu consulta en este momento. Inténtalo de nuevo más tarde.",
+            "No pude procesar tu consulta en este momento. Inténtalo de nuevo más tarde."
           );
         }
       });
+
     userQueues.set(userId, current);
+
     await current;
-    if (userQueues.get(userId) === current) userQueues.delete(userId);
+
+    if (userQueues.get(userId) === current) {
+      userQueues.delete(userId);
+    }
   };
 
   client.on("messageCreate", (message) => {
