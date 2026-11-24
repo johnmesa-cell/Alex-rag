@@ -4,24 +4,15 @@ const { sessionIdFor } = require("./message-utils");
 async function askN8n(
   config,
   message,
-  route = "simple",
+  webhookUrl,
+  sessionRoute = "simple",
   fetchImpl = fetch
 ) {
-  let webhookUrl;
-
-  if (route === "sql") {
-    webhookUrl = config.n8nSqlWebhookUrl;
-  } else if (route === "simple") {
-    webhookUrl = config.n8nWebhookUrl;
-  } else {
-    throw new Error(`Unknown n8n workflow route: ${route}`);
-  }
-
   if (!webhookUrl) {
-    throw new Error(`Missing webhook URL for route: ${route}`);
+    throw new Error("Missing n8n webhook URL");
   }
 
-  const sessionId = sessionIdFor(message, route);
+  const sessionId = sessionIdFor(message, sessionRoute);
 
   const controller = new AbortController();
 

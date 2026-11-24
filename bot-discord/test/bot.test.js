@@ -5,13 +5,13 @@ const { createBot } = require("../src/bot");
 
 function config() {
   return {
-    allowedChannelIds: new Set([
-      "channel-1",
-      "channel-2",
-      "channel-3",
-      "channel-4",
+    channelRoutes: new Map([
+      ["channel-1", "http://n8n:5678/webhook/simple"],
+      ["channel-2", "http://n8n:5678/webhook/simple"],
+      ["channel-3", "http://n8n:5678/webhook/custom-route"],
+      ["channel-4", "http://n8n:5678/webhook/sql"],
     ]),
-    sqlChannelIds: new Set(["channel-3", "channel-4"]),
+    legacySqlSessionChannelIds: new Set(["channel-3", "channel-4"]),
     requestTimeoutMs: 1000,
   };
 }
@@ -30,7 +30,7 @@ function message(id, userId = "user", channelId = "channel-1") {
   };
 }
 
-test("ignores bots and messages outside the allowed channels", async () => {
+test("ignores bots, unconfigured channels, and messages without a server", async () => {
   let calls = 0;
 
   const { processMessage } = createBot(config(), {
@@ -48,18 +48,23 @@ test("ignores bots and messages outside the allowed channels", async () => {
 
   await processMessage(message("other", "user", "channel-5"));
 
+  const directMessage = message("direct");
+  directMessage.guildId = null;
+  await processMessage(directMessage);
+
   assert.equal(calls, 0);
 });
 
-test("routes original channels to Simple Memory", async () => {
-  const routes = [];
+test("routes each channel to its configured webhook", async () => {
+  const received = [];
 
   const { processMessage } = createBot(config(), {
     client: { on() {} },
-    askN8n: async (_config, incoming, route) => {
-      routes.push({
+    askN8n: async (_config, incoming, webhookUrl, sessionRoute) => {
+      received.push({
         channelId: incoming.channelId,
-        route,
+        webhookUrl,
+        sessionRoute,
       });
 
       return "answer";
@@ -68,34 +73,79 @@ test("routes original channels to Simple Memory", async () => {
 
   await processMessage(message("original-1", "user", "channel-1"));
   await processMessage(message("original-2", "user", "channel-2"));
+  await processMessage(message("sql-1", "user", "channel-3"));
+  await processMessage(message("sql-2", "user", "channel-4"));
 
-  assert.deepEqual(routes, [
-    { channelId: "channel-1", route: "simple" },
-    { channelId: "channel-2", route: "simple" },
+  assert.deepEqual(received, [
+    {
+      channelId: "channel-1",
+      webhookUrl: "http://n8n:5678/webhook/simple",
+      sessionRoute: "simple",
+    },
+    {
+      channelId: "channel-2",
+      webhookUrl: "http://n8n:5678/webhook/simple",
+      sessionRoute: "simple",
+    },
+    {
+      channelId: "channel-3",
+      webhookUrl: "http://n8n:5678/webhook/custom-route",
+      sessionRoute: "sql",
+    },
+    {
+      channelId: "channel-4",
+      webhookUrl: "http://n8n:5678/webhook/sql",
+      sessionRoute: "sql",
+    },
   ]);
 });
 
-test("routes SQL channels to Postgres Chat Memory", async () => {
-  const routes = [];
+test("shared webhook URLs keep session classifications independent", async () => {
+  const botConfig = config();
+  botConfig.legacySqlSessionChannelIds.add("channel-2");
 
-  const { processMessage } = createBot(config(), {
+  const received = [];
+
+  const { processMessage } = createBot(botConfig, {
     client: { on() {} },
-    askN8n: async (_config, incoming, route) => {
-      routes.push({
-        channelId: incoming.channelId,
-        route,
-      });
-
+    askN8n: async (_config, incoming, webhookUrl, sessionRoute) => {
+      received.push({ channelId: incoming.channelId, webhookUrl, sessionRoute });
       return "answer";
     },
   });
 
-  await processMessage(message("sql-1", "user", "channel-3"));
-  await processMessage(message("sql-2", "user", "channel-4"));
+  await processMessage(message("shared-simple", "user", "channel-1"));
+  await processMessage(message("shared-sql", "user", "channel-2"));
 
-  assert.deepEqual(routes, [
-    { channelId: "channel-3", route: "sql" },
-    { channelId: "channel-4", route: "sql" },
+  assert.deepEqual(received, [
+    {
+      channelId: "channel-1",
+      webhookUrl: "http://n8n:5678/webhook/simple",
+      sessionRoute: "simple",
+    },
+    {
+      channelId: "channel-2",
+      webhookUrl: "http://n8n:5678/webhook/simple",
+      sessionRoute: "sql",
+    },
+  ]);
+});
+
+test("configured channels without legacy SQL metadata use simple sessions", async () => {
+  const received = [];
+
+  const { processMessage } = createBot(config(), {
+    client: { on() {} },
+    askN8n: async (_config, incoming, _webhookUrl, sessionRoute) => {
+      received.push({ channelId: incoming.channelId, sessionRoute });
+      return "answer";
+    },
+  });
+
+  await processMessage(message("simple-session", "user", "channel-1"));
+
+  assert.deepEqual(received, [
+    { channelId: "channel-1", sessionRoute: "simple" },
   ]);
 });
 

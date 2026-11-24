@@ -30,7 +30,7 @@ function createBot(config, dependencies = {}) {
     if (
       message.author?.bot ||
       !message.guildId ||
-      !config.allowedChannelIds.has(message.channelId)
+      !config.channelRoutes.has(message.channelId)
     ) {
       return;
     }
@@ -41,7 +41,8 @@ function createBot(config, dependencies = {}) {
 
     seenMessages.set(message.id, Date.now() + DUPLICATE_TTL_MS);
 
-    const route = config.sqlChannelIds.has(message.channelId)
+    const webhookUrl = config.channelRoutes.get(message.channelId);
+    const sessionRoute = config.legacySqlSessionChannelIds.has(message.channelId)
       ? "sql"
       : "simple";
 
@@ -52,7 +53,12 @@ function createBot(config, dependencies = {}) {
       .catch(() => undefined)
       .then(async () => {
         try {
-          const answer = await fetchN8n(config, message, route);
+          const answer = await fetchN8n(
+            config,
+            message,
+            webhookUrl,
+            sessionRoute
+          );
 
           for (const chunk of splitMessage(answer)) {
             await message.channel.send(chunk);
