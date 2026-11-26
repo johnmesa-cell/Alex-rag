@@ -10,7 +10,7 @@ La configuración vigente se encuentra en [`../../nginx/n8n.megiddo20.me.conf`](
 
 - Dominio: `n8n.megiddo20.me`.
 - Destino: `http://127.0.0.1:5678/`.
-- Puerto publicado por Nginx: 80.
+- Puerto de escucha de Nginx: 80.
 
 Docker Compose mantiene n8n vinculado a `127.0.0.1:5678`, por lo que el destino corresponde al host.
 

@@ -8,7 +8,7 @@ Esta guía incluye únicamente operaciones comprobables mediante los archivos ac
 - Archivo `.env` basado en `.env.example`.
 - Acceso a Nginx si se usa el proxy inverso incluido.
 - Bot registrado en Discord con permisos e intent configurados.
-- Servicios de n8n y Ollama disponibles.
+- Servicio de n8n disponible y Ollama iniciado cuando los workflows que se vayan a utilizar lo requieran.
 
 ## Preparación
 
