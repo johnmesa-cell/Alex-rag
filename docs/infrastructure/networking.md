@@ -16,11 +16,19 @@ Docker Compose define dos redes puente:
 
 De esta forma, n8n puede alcanzar los servicios internos y el bot puede alcanzar n8n. Ollama y Qdrant no deben ser accesibles mediante una publicación de puertos en Docker Compose.
 
-## Comunicación externa
+## Comunicación entre Discord, el bot y n8n
 
-El único puerto publicado por la configuración Compose es el puerto loopback `127.0.0.1:5678` de n8n. Nginx, ejecutado fuera o independientemente de los contenedores definidos en este Compose, puede acceder a ese puerto en el host.
+La comunicación tiene tres partes distintas:
 
-Discord y n8n se comunican mediante tráfico HTTPS desde Discord hacia el puerto público protegido por Nginx y por las rutas internas configuradas. Las URLs exactas de los webhooks no deben publicarse con identificadores sensibles.
+1. **Discord con el bot:** el bot establece la conexión con Discord mediante discord.js y recibe eventos de mensajes. No es necesario abrir un puerto publicado por Docker para esta conexión.
+2. **El bot con n8n:** el bot realiza solicitudes HTTP `POST` a las URLs de los webhooks configuradas en `DISCORD_CHANNEL_ROUTES`.
+3. **Comunicación interna:** el bot y n8n comparten `web-net`. El bot puede referirse a n8n mediante el nombre del servicio Docker `n8n` y el puerto interno `5678`, sin depender del proxy Nginx.
+
+Las rutas de ejemplo de [`.env.example`](../../.env.example) utilizan direcciones internas como `http://n8n:5678/webhook/...`. Por lo tanto, el bot usa HTTP dentro de la red Docker para comunicarse con n8n.
+
+Nginx proporciona una ruta independiente de acceso desde el exterior hacia n8n mediante el puerto local `127.0.0.1:5678` publicado por Docker Compose. El bot no necesita pasar por Nginx ni por una URL HTTPS para alcanzar n8n dentro de Compose.
+
+Las URLs exactas de los webhooks no deben publicarse con identificadores sensibles.
 
 ## Consideraciones
 

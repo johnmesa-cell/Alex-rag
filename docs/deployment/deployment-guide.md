@@ -23,19 +23,27 @@ cp .env.example .env
 4. Añade el secreto compartido en `N8N_WEBHOOK_SECRET`.
 5. Confirma que n8n y el certificado montado están disponibles.
 
-## Inicio
+## Inicio de servicios según perfiles
 
-Para iniciar n8n y el bot:
+`n8n` y `discord-bot` no tienen perfil asignado, por lo que pueden iniciarse directamente:
 
 ```bash
 docker compose up -d n8n discord-bot
 ```
 
-Ollama y Qdrant pertenecen al perfil `ia`. Para incluirlos:
+Para iniciar Ollama junto con n8n y Discord, sin iniciar Qdrant innecesariamente:
+
+```bash
+docker compose --profile ia up -d n8n ollama discord-bot
+```
+
+`ollama` y `qdrant` pertenecen al perfil `ia`. Para iniciar todos los servicios, incluidos Ollama y Qdrant:
 
 ```bash
 docker compose --profile ia up -d
 ```
+
+La segunda opción inicia solamente los servicios indicados y activa el perfil necesario para Ollama. No inicia Qdrant. La tercera opción activa el perfil `ia` y puede iniciar tanto Ollama como Qdrant; no se presenta Qdrant como obligatorio para la configuración RAG actual.
 
 ## Bot de Discord
 

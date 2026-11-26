@@ -33,7 +33,16 @@ El bloque conserva el protocolo HTTP 1.1 y admite actualización de conexión me
 
 ## TLS
 
-La configuración disponible escucha únicamente HTTP en el puerto 80. No se confirmó un bloque TLS ni rutas a certificados privados dentro del repositorio. HTTPS debe configurarse antes de exponer el servicio a producción sin atribuirlo a la configuración actual.
+La configuración disponible escucha únicamente HTTP en el puerto 80 y no contiene un bloque TLS ni rutas a certificados privados HTTPS. El destino interno usa HTTP: `http://127.0.0.1:5678/`.
+
+Existe una diferencia entre tres configuraciones distintas:
+
+- El archivo Nginx publicado aquí termina o escucha inicialmente en HTTP sobre el puerto 80.
+- Docker Compose publica n8n en `127.0.0.1:5678` y el archivo proxy lo alcanza mediante HTTP local.
+- Docker Compose define `N8N_WEBHOOK_URL=https://${N8N_HOST}/`, aunque el archivo de entorno de ejemplo establece `N8N_HOST=localhost` y `N8N_PROTOCOL=http`.
+- El bot puede comunicarse directamente con n8n por HTTP dentro de `web-net`, usando `http://n8n:5678/webhook/...`.
+
+Los archivos no permiten determinar dónde termina TLS en el despliegue real ni si existe una configuración HTTPS externa no incluida en el repositorio. Por ello, no se puede afirmar que el acceso público actual use HTTPS ni que el bot reciba o envíe tráfico HTTPS hacia n8n a través de Docker. Esta discrepancia debe resolverse en el despliegue real antes de considerar que las tres configuraciones son equivalentes.
 
 ## Instalación y mantenimiento
 

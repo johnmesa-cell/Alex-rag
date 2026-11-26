@@ -21,7 +21,7 @@ El uso local de modelos no garantiza privacidad absoluta: esta también depende 
 
 - Infraestructura administrada con Docker Compose.
 - n8n como motor de automatización y orquestación.
-- Ollama con los modelos `Llama 3.2:3b`, `Qwen 2.5:3b` y `Qwen3-Embedding:0.6b`.
+- Ollama con los modelos `llama3.2:3b`, `qwen2.5:3b` y `qwen3-embedding:0.6b`.
 - Supabase para almacenamiento y recuperación vectorial, según la configuración operativa declarada por el proyecto.
 - Memoria conversacional configurada dentro de los mecanismos disponibles en n8n.
 - Bot de Discord como puente entre los usuarios y los webhooks de n8n.
