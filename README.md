@@ -25,8 +25,12 @@ El bot se encuentra en [`bot-discord/`](./bot-discord/) y se ejecuta como el ser
 Configura en el `.env` de la raíz:
 
 - `DISCORD_TOKEN`: token del bot, nunca lo incluyas en Git.
-- `DISCORD_ALLOWED_CHANNEL_IDS`: los dos IDs de canales permitidos, separados por comas.
-- `N8N_DISCORD_WEBHOOK_URL`: normalmente `http://n8n:5678/webhook/discord-chat`.
+- `DISCORD_CHANNEL_ROUTES`: objeto JSON con IDs de canales y URLs HTTP(S) de n8n.
+  Los canales pueden compartir una URL. Ejemplo:
+  `DISCORD_CHANNEL_ROUTES='{"123":"http://n8n:5678/webhook/discord-chat","456":"http://n8n:5678/webhook/discord-sql"}'`.
+- `DISCORD_LEGACY_SQL_SESSION_CHANNEL_IDS`: lista separada por comas de los canales
+  que históricamente usaban IDs de sesión SQL. Es metadata temporal de compatibilidad
+  y no afecta al enrutamiento; se retirará al implementar la migración de sesiones.
 - `N8N_WEBHOOK_SECRET`: secreto compartido con el webhook de n8n.
 - `DISCORD_REQUEST_TIMEOUT_MS`: timeout de la petición a n8n.
 
@@ -34,9 +38,11 @@ En Discord, habilita el intent privilegiado **Message Content Intent** y concede
 bot únicamente permisos para ver canales, leer historial y enviar mensajes.
 
 El bot envía a n8n `message`, `sessionId`, `messageId`, `guildId` y `channelId`.
-La sesión tiene el formato `discord:<guildId>:<userId>`. Configura un segundo
-workflow en n8n con un Webhook autenticado, el agente RAG existente y
-`Respond to Webhook`; conserva sin cambios el workflow del Chat Trigger web.
+Las sesiones simples conservan el formato `discord:<guildId>:<userId>`; los
+canales incluidos en `DISCORD_LEGACY_SQL_SESSION_CHANNEL_IDS` conservan
+`discord:postgres:<guildId>:<channelId>:<userId>`. Esta compatibilidad temporal
+no influye en la selección del webhook. Configura tus webhooks autenticados en
+n8n; los workflows no forman parte de esta configuración.
 
 Para validar localmente:
 
