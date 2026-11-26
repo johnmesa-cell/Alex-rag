@@ -1,52 +1,59 @@
 # Alex-rag
-micro serviso de Alex creado usando rag
 
-## Configuración de Nginx para n8n
+<p align="center">
+  <img src="docs/assets/logo-alex-principal.jpeg" alt="Logo de Alex-rag" width="240">
+</p>
 
-El archivo [`nginx/n8n.megiddo20.me.conf`](./nginx/n8n.megiddo20.me.conf) contiene un bloque de servidor de Nginx que reenvía las solicitudes de `n8n.megiddo20.me` a n8n en `127.0.0.1:5678`.
+Alex-rag es una implementación independiente de un sistema **RAG** (*Retrieval-Augmented Generation*) orientado a consultas médicas e informativas de emergencias. Utiliza n8n para la orquestación, Ollama para la ejecución local de modelos y Discord como interfaz de comunicación.
 
-En un servidor Ubuntu/Debian con Nginx instalado, copia el archivo a `sites-available`, habilítalo y valida la configuración:
+> Alex-rag nació a partir del concepto general del proyecto ALEX, pero actualmente funciona de manera independiente. No está integrado con el backend principal de ALEX, y una posible integración futura no forma parte de su implementación actual.
 
-```bash
-sudo cp nginx/n8n.megiddo20.me.conf /etc/nginx/sites-available/n8n.megiddo20.me
-sudo ln -s /etc/nginx/sites-available/n8n.megiddo20.me /etc/nginx/sites-enabled/n8n.megiddo20.me
-sudo nginx -t
-sudo systemctl reload nginx
-```
+## Propósito
 
-Antes de habilitarlo, confirma que el DNS del dominio apunta al servidor y que n8n está escuchando en `127.0.0.1:5678`. Esta configuración escucha solo en HTTP (puerto 80); para producción, configura HTTPS/TLS en Nginx.
+- Ejecutar modelos de lenguaje localmente y reducir la dependencia de APIs externas.
+- Mantener mayor control sobre el procesamiento y el almacenamiento de la información.
+- Recuperar contexto relevante desde una base documental mediante arquitectura RAG.
+- Facilitar consultas de texto a través de un bot de Discord.
 
-## Bot de Discord
+El uso local de modelos no garantiza privacidad absoluta: esta también depende de la configuración de servicios, integraciones y almacenamiento.
 
-El bot se encuentra en [`bot-discord/`](./bot-discord/) y se ejecuta como el servicio
-`discord-bot` de Docker Compose. No publica puertos y se conecta a `web-net` e
-`ia-net`; Ollama y Qdrant continúan únicamente en `ia-net`.
+## Características implementadas
 
-Configura en el `.env` de la raíz:
+- Infraestructura administrada con Docker Compose.
+- n8n como motor de automatización y orquestación.
+- Ollama con los modelos `Llama 3.2:3b`, `Qwen 2.5:3b` y `Qwen3-Embedding:0.6b`.
+- Supabase para almacenamiento y recuperación vectorial, según la configuración operativa declarada por el proyecto.
+- Memoria conversacional configurada dentro de los mecanismos disponibles en n8n.
+- Bot de Discord como puente entre los usuarios y los webhooks de n8n.
+- Qdrant definido como contenedor opcional con perfil `ia`; su uso activo debe verificarse en la configuración de los workflows.
 
-- `DISCORD_TOKEN`: token del bot, nunca lo incluyas en Git.
-- `DISCORD_CHANNEL_ROUTES`: objeto JSON con IDs de canales y URLs HTTP(S) de n8n.
-  Los canales pueden compartir una URL. Ejemplo:
-  `DISCORD_CHANNEL_ROUTES='{"123":"http://n8n:5678/webhook/discord-chat","456":"http://n8n:5678/webhook/discord-sql"}'`.
-- `DISCORD_LEGACY_SQL_SESSION_CHANNEL_IDS`: lista separada por comas de los canales
-  que históricamente usaban IDs de sesión SQL. Es metadata temporal de compatibilidad
-  y no afecta al enrutamiento; se retirará al implementar la migración de sesiones.
-- `N8N_WEBHOOK_SECRET`: secreto compartido con el webhook de n8n.
-- `DISCORD_REQUEST_TIMEOUT_MS`: timeout de la petición a n8n.
+## Arquitectura resumida
 
-En Discord, habilita el intent privilegiado **Message Content Intent** y concede al
-bot únicamente permisos para ver canales, leer historial y enviar mensajes.
+Discord recibe los mensajes del usuario y los envía al bot `discord-bot`. El bot selecciona el webhook configurado y llama a n8n. n8n orquesta la recuperación y la generación mediante los modelos disponibles en Ollama y el almacenamiento documental configurado. La documentación de los nodos y parámetros internos de los workflows se pospone hasta que se estabilice su configuración.
 
-El bot envía a n8n `message`, `sessionId`, `messageId`, `guildId` y `channelId`.
-Las sesiones simples conservan el formato `discord:<guildId>:<userId>`; los
-canales incluidos en `DISCORD_LEGACY_SQL_SESSION_CHANNEL_IDS` conservan
-`discord:postgres:<guildId>:<channelId>:<userId>`. Esta compatibilidad temporal
-no influye en la selección del webhook. Configura tus webhooks autenticados en
-n8n; los workflows no forman parte de esta configuración.
+## Tecnologías principales
 
-Para validar localmente:
+- [n8n](https://n8n.io/)
+- [Ollama](https://ollama.com/)
+- [Supabase](https://supabase.com/)
+- [Discord](https://discord.com/) y discord.js
+- [Docker](https://www.docker.com/) y Docker Compose
+- [Nginx](https://nginx.org/)
+- [Qdrant](https://qdrant.tech/) como componente opcional de infraestructura
 
-```bash
-npm --prefix bot-discord test
-docker compose build discord-bot
-```
+## Estado del proyecto
+
+La infraestructura básica, el bot de Discord y los mecanismos RAG configurados en n8n forman parte del estado actual. El RAG multiagente está previsto como objetivo futuro prioritario para mensajes de texto. La recepción y transcripción de audio mediante STT está contemplada únicamente como objetivo futuro.
+
+## Documentación
+
+Consulta el [índice de documentación](docs/README.md) para navegar por toda la información técnica.
+
+- [Arquitectura general](docs/architecture/overview.md)
+- [Docker y contenedores](docs/infrastructure/docker.md)
+- [Nginx](docs/infrastructure/nginx.md)
+- [Redes Docker](docs/infrastructure/networking.md)
+- [Modelos Ollama](docs/ai/ollama-models.md)
+- [Integración con Discord](docs/integrations/discord-bot.md)
+- [Guía de despliegue](docs/deployment/deployment-guide.md)
+
